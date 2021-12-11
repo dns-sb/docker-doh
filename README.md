@@ -54,7 +54,8 @@ services:
       # You can add more variables here or as docker secret and entrypoint
       # script will replace them inside doh-server.conf file
     volumes:
-      # - ./doh-server.conf:/server/doh-server.conf
+      # "server-custom" is a directory conatins "doh-server.conf"
+      # - server-custom:/server-custom
       # Mount app-config script with your customizations
       # - ./app-config:/app-config
     deploy:
