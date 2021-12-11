@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+    doh-server:
+      image: doh-server
+      build:
+          context: .
+          dockerfile: ./Dockerfile.alpine
+      container_name: doh-server
+      volumes:
+          - ../server-custom/:/server-custom/
+      restart: always
+      network_mode: host
