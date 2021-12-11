@@ -18,13 +18,14 @@ DOH_CONFIG_CUSTOM_FILE=/server-custom/doh-server.conf
 printf "|---------------------------------------------------------------------------------------------\n";
 printf "| Starting DNS Over HTTP Service \n"
 
-# Load env vars
-printf "| ENTRYPOINT: \033[0;31mLoading docker secrets if found...\033[0m\n"
 
 
 if [ -f "${DOH_CONFIG_CUSTOM_FILE}" ]; then
+    printf "| ENTRYPOINT: \033[0;31mUse custom server config...\033[0m\n"
     cat "${DOH_CONFIG_CUSTOM_FILE}" > "${DOH_CONFIG_FILE}"
 else
+    # Load env vars
+    printf "| ENTRYPOINT: \033[0;31mLoading docker secrets if found...\033[0m\n"
     for i in $(env|grep '/run/secrets'); do
         varName=$(echo $i|awk -F '[=]' '{print $1}'|sed 's/_FILE//')
         varFile=$(echo $i|awk -F '[=]' '{print $2}')
