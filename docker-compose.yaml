@@ -12,7 +12,7 @@ services:
       restart: always
       network_mode: host
       healthcheck:
-          test: ["CMD", "wget", "-qO/dev/null", "http://localhost:8053/dns-query?name=google.com&type=A"]
+          test: ["CMD", "wget", "-qO/dev/null", "http://localhost:8053/dns-query?name=check.dns.sh&type=A"]
           interval: 30s
           timeout: 10s
           start_period: 30s
