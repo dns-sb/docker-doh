@@ -16,21 +16,26 @@ env:
   DEBUG: "0"
   UPSTREAM_DNS_SERVER: "udp:8.8.8.8:53"
   DOH_HTTP_PREFIX: "/dns-query"
-  DOH_SERVER_LISTEN: ":80"
+  DOH_SERVER_LISTEN: ":8053"
   DOH_SERVER_TIMEOUT: "10"
   DOH_SERVER_TRIES: "3"
   DOH_SERVER_VERBOSE: "false"
 
+containerPort: 8053
+
 service:
   type: ClusterIP
   port: 80
+  annotations:
 
 ingress:
   enabled: false
+  className: nginx
   domainName: "doh.your-domain.com"
   annotations:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
+  pathType: Prefix
 
 resources:
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -43,6 +48,8 @@ resources:
    requests:
      cpu: 100m
      memory: 128Mi
+
+probesQuery: name=google.com
 
 nodeSelector: {}
 
