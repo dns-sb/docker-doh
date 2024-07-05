@@ -8,7 +8,7 @@ WORKDIR /src
 
 # Lets download latest version of DOH
 RUN set -x ;\
-    DOH_VERSION_LATEST=v2.3.5 \
+    DOH_VERSION_LATEST=v2.3.6 \
     && curl -L "https://github.com/m13253/dns-over-https/archive/${DOH_VERSION_LATEST}.zip" -o doh.zip \
     && unzip doh.zip \
     && rm doh.zip \
@@ -38,9 +38,9 @@ RUN chown -R nobody:nogroup /server
 USER nobody
 
 # Set environment defaults
-# We are using OpenDNS DNS server address as default
-# Here is the list of addresses: https://use.opendns.com/
-ENV UPSTREAM_DNS_SERVER="udp:208.67.222.222:53"
+# We are using Cloudflare DNS server address as default
+# Here is the list of addresses: https://one.one.one.one/dns/
+ENV UPSTREAM_DNS_SERVER="udp:1.1.1.1:53"
 ENV DOH_HTTP_PREFIX="/getnsrecord"
 ENV DOH_SERVER_LISTEN=":8053"
 ENV DOH_SERVER_TIMEOUT="10"
