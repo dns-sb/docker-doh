@@ -24,28 +24,27 @@
 ```bash
 docker run -itd --name doh-server \
     -p 8053:8053 \
-    -e UPSTREAM_DNS_SERVER=udp:208.67.222.222:53 \
-satishweb/doh-server
+    -e UPSTREAM_DNS_SERVER=udp:185.222.222.222:53 \
+ghcr.io/dns-sb/docker-doh
 ```
 
 ## Docker configuration:
 ```yaml
-version: '2.2'
 networks:
   default:
 
 services:
   doh-server:
-    image: satishweb/doh-server
+    image: ghcr.io/dns-sb/docker-doh:latest
     hostname: doh-server
     networks:
       - default
     environment:
       DEBUG: "0"
       # Upstream DNS server: proto:host:port
-      # We are using OpenDNS DNS servers as default,
-      # Here is the list of addresses: https://use.opendns.com/
-      UPSTREAM_DNS_SERVER: "udp:208.67.222.222:53"
+      # We are using DNS.SB servers as default,
+      # Here is the list of addresses: https://dns.sb/guide/
+      UPSTREAM_DNS_SERVER: "udp:185.222.222.222:53"
       DOH_HTTP_PREFIX: "/getnsrecord"
       DOH_SERVER_LISTEN: ":8053"
       DOH_SERVER_TIMEOUT: "10"
@@ -67,11 +66,11 @@ services:
 
 ## Build Docker image
 ```bash
-docker build . --no-cache -t satishweb/doh-server -f Dockerfile.alpine
+docker build . --no-cache -t ghcr.io/dns-sb/docker-doh -f Dockerfile.alpine
 ```
 ## Pull Docker Hub Image
 ```bash
-docker pull satishweb/doh-server
+docker pull ghcr.io/dns-sb/docker-doh
 ```
 
 # How to setup DOH Server on Linux/Mac/RaspberryPI in minutes:
@@ -82,12 +81,12 @@ docker pull satishweb/doh-server
 - AWS Access Key, Secret key, and R53 DNS Hosted Zone ID (for LetsEncrypt based auto installation of SSL Certs) (Optional)
 
 ### Steps
-- Visit https://github.com/satishweb/docker-doh/releases and download the latest release to your server
+- Visit https://github.com/dns-sb/docker-doh/releases and download the latest release to your server
 ```bash
-wget https://github.com/satishweb/docker-doh/archive/v2.3.3.zip
-unzip v2.3.3.zip
-cp -rf docker-doh-2.3.3/examples/docker-compose-doh-server doh-server
-rm -rf v2.3.3.zip docker-doh-2.3.3
+wget https://github.com/dns-sb/docker-doh/archive/v2.3.7.zip
+unzip v2.3.7.zip
+cp -rf docker-doh-2.3.7/examples/docker-compose-doh-server doh-server
+rm -rf v2.3.7.zip docker-doh-2.3.7
 cd doh-server
 ```
 - Copy env.sample.conf to env.conf and update environment variables
@@ -211,3 +210,4 @@ Value: https://dns.example.com/getnsrecord
 # Credits
 - DOH Server: https://github.com/m13253/dns-over-https
 - Traefik Proxy: https://www.traefik.io
+- docker-doh: https://github.com/satishweb/docker-doh
