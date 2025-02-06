@@ -9,7 +9,7 @@ WORKDIR /src
 
 # Lets download latest version of DOH
 RUN set -x ;\
-    DOH_VERSION_LATEST=v2.3.7 \
+    DOH_VERSION_LATEST=v2.3.8 \
     && curl -L "https://github.com/m13253/dns-over-https/archive/${DOH_VERSION_LATEST}.zip" -o doh.zip \
     && unzip doh.zip \
     && rm doh.zip \
