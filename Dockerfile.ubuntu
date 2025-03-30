@@ -1,6 +1,6 @@
 # Author: Satish Gaikwad <satish@satishweb.com>
 # Author: DNS.SB <admin@dns.sb>
-FROM golang:1.23-bookworm AS doh-build
+FROM golang:1.24-bookworm AS doh-build
 LABEL MAINTAINER admin@dns.sb
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -17,7 +17,7 @@ WORKDIR /src
 
 # Lets download latest version of DOH
 RUN set -x ;\
-    DOH_VERSION_LATEST=v2.3.8 \
+    DOH_VERSION_LATEST=v2.3.10 \
     && curl -L "https://github.com/m13253/dns-over-https/archive/${DOH_VERSION_LATEST}.zip" -o doh.zip \
     && unzip doh.zip \
     && rm doh.zip \
