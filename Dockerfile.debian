@@ -1,0 +1,57 @@
+# Author: Satish Gaikwad <satish@satishweb.com>
+# Author: DNS.SB <admin@dns.sb>
+
+# Build on the native platform and cross-compile for the target,
+# so multi-arch builds do not run the Go compiler under QEMU.
+FROM --platform=$BUILDPLATFORM golang:1.27-trixie AS doh-build
+
+ARG DOH_VERSION=v2.4.0
+ARG TARGETOS
+ARG TARGETARCH
+
+WORKDIR /src
+
+RUN set -eux; \
+    curl -fsSL "https://github.com/m13253/dns-over-https/archive/refs/tags/${DOH_VERSION}.tar.gz" \
+      | tar -xz --strip-components=1; \
+    cd doh-server; \
+    CGO_ENABLED=0 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" \
+      go build -trimpath -ldflags "-s -w" -o /dist/doh-server; \
+    echo "${DOH_VERSION}" > /dist/doh-server.version
+
+FROM debian:stable-slim
+LABEL maintainer="admin@dns.sb"
+
+# Packages required by docker-entrypoint (envsubst) and the healthcheck (wget)
+RUN set -eux; \
+    apt-get update; \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      ca-certificates \
+      gettext-base \
+      wget; \
+    rm -rf /var/lib/apt/lists/*
+
+# /server must be writable by nobody: the entrypoint renders doh-server.conf into it
+COPY --chown=nobody:nogroup --from=doh-build /dist /server
+COPY --chown=nobody:nogroup doh-server.sample.conf /server/doh-server.sample.conf
+COPY --chmod=755 docker-entrypoint /docker-entrypoint
+
+USER nobody
+
+# Set environment defaults
+# We are using DNS.SB DNS server address as default
+# Here is the list of addresses: https://dns.sb/guide/
+ENV UPSTREAM_DNS_SERVER="udp:185.222.222.222:53" \
+    DOH_HTTP_PREFIX="/getnsrecord" \
+    DOH_SERVER_LISTEN=":8053" \
+    DOH_SERVER_TIMEOUT="10" \
+    DOH_SERVER_TRIES="3" \
+    DOH_SERVER_VERBOSE="false"
+
+EXPOSE 8053
+
+HEALTHCHECK --interval=1m --timeout=30s --start-period=1m \
+    CMD wget -q -O /dev/null "http://localhost:${DOH_SERVER_LISTEN##*:}${DOH_HTTP_PREFIX}?name=google.com&type=A" || exit 1
+
+ENTRYPOINT ["/docker-entrypoint"]
+CMD ["/server/doh-server", "-conf", "/server/doh-server.conf"]

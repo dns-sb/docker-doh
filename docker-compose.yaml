@@ -5,7 +5,7 @@ services:
       image: doh-server
       build:
           context: .
-          dockerfile: ./Dockerfile.alpine
+          dockerfile: ./Dockerfile.debian
       container_name: doh-server
       volumes:
           - ./server-custom/:/server-custom/

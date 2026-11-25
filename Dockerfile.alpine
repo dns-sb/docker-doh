@@ -1,54 +1,51 @@
 # Author: Satish Gaikwad <satish@satishweb.com>
 # Author: DNS.SB <admin@dns.sb>
-FROM golang:1.24-alpine AS doh-build
-LABEL MAINTAINER admin@dns.sb
 
-RUN apk add --no-cache git make jq curl
+# Build on the native platform and cross-compile for the target,
+# so multi-arch builds do not run the Go compiler under QEMU.
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS doh-build
+
+ARG DOH_VERSION=v2.4.0
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /src
 
-# Lets download latest version of DOH
-RUN set -x ;\
-    DOH_VERSION_LATEST=v2.3.10 \
-    && curl -L "https://github.com/m13253/dns-over-https/archive/${DOH_VERSION_LATEST}.zip" -o doh.zip \
-    && unzip doh.zip \
-    && rm doh.zip \
-    && cd dns-over-https* \
-    && make doh-server/doh-server \
-    && mkdir /dist \
-    && cp doh-server/doh-server /dist/doh-server \
-    && echo ${DOH_VERSION_LATEST} > /dist/doh-server.version
+RUN set -eux; \
+    wget -qO- "https://github.com/m13253/dns-over-https/archive/refs/tags/${DOH_VERSION}.tar.gz" \
+      | tar -xz --strip-components=1; \
+    cd doh-server; \
+    CGO_ENABLED=0 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" \
+      go build -trimpath -ldflags "-s -w" -o /dist/doh-server; \
+    echo "${DOH_VERSION}" > /dist/doh-server.version
 
-FROM alpine:3.21
-LABEL MAINTAINER admin@dns.sb
+FROM alpine:3.24
+LABEL maintainer="admin@dns.sb"
 
-COPY --from=doh-build /dist /server
-COPY doh-server.sample.conf /server/doh-server.sample.conf
+# Packages required by docker-entrypoint (bash, envsubst)
+RUN apk add --no-cache bash ca-certificates gettext-envsubst
 
-# Install required packages by docker-entrypoint
-RUN apk add --no-cache bash gettext curl
+# /server must be writable by nobody: the entrypoint renders doh-server.conf into it
+COPY --chown=nobody:nogroup --from=doh-build /dist /server
+COPY --chown=nobody:nogroup doh-server.sample.conf /server/doh-server.sample.conf
+COPY --chmod=755 docker-entrypoint /docker-entrypoint
 
-# Add docker entrypoint and make it executable
-ADD docker-entrypoint /docker-entrypoint
-RUN chmod u+x /docker-entrypoint
-
-# Change owner of the server folder
-RUN chown -R nobody:nogroup /server
-
-# Tell docker that all future commands should run as nobody
 USER nobody
 
 # Set environment defaults
 # We are using DNS.SB DNS server address as default
 # Here is the list of addresses: https://dns.sb/guide/
-ENV UPSTREAM_DNS_SERVER="udp:185.222.222.222:53"
-ENV DOH_HTTP_PREFIX="/getnsrecord"
-ENV DOH_SERVER_LISTEN=":8053"
-ENV DOH_SERVER_TIMEOUT="10"
-ENV DOH_SERVER_TRIES="3"
-ENV DOH_SERVER_VERBOSE="false"
+ENV UPSTREAM_DNS_SERVER="udp:185.222.222.222:53" \
+    DOH_HTTP_PREFIX="/getnsrecord" \
+    DOH_SERVER_LISTEN=":8053" \
+    DOH_SERVER_TIMEOUT="10" \
+    DOH_SERVER_TRIES="3" \
+    DOH_SERVER_VERBOSE="false"
 
 EXPOSE 8053
 
+HEALTHCHECK --interval=1m --timeout=30s --start-period=1m \
+    CMD wget -q -O /dev/null "http://localhost:${DOH_SERVER_LISTEN##*:}${DOH_HTTP_PREFIX}?name=google.com&type=A" || exit 1
+
 ENTRYPOINT ["/docker-entrypoint"]
-CMD [ "/server/doh-server", "-conf", "/server/doh-server.conf" ]
+CMD ["/server/doh-server", "-conf", "/server/doh-server.conf"]
